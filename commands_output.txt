@@ -1,0 +1,59 @@
+=== COMMAND 1: Directory Structure (find) ===
+/home/claude/lab_submission/Q2_Workspace/secure_project
+/home/claude/lab_submission/Q2_Workspace/secure_project/docs
+/home/claude/lab_submission/Q2_Workspace/secure_project/docs/design_spec.txt
+/home/claude/lab_submission/Q2_Workspace/secure_project/reports
+/home/claude/lab_submission/Q2_Workspace/secure_project/reports/status_report.txt
+/home/claude/lab_submission/Q2_Workspace/secure_project/src
+/home/claude/lab_submission/Q2_Workspace/secure_project/src/main.py
+-e 
+Observation: The 'find' command recursively lists all files and directories within the secure_project workspace. Three subdirectories (docs, src, reports) were created along with relevant project files.
+-e 
+=== COMMAND 2: Permissions BEFORE chmod ===
+total 20
+drwx------ 5 root root 4096 Jun 24 12:06 .
+drwxr-xr-x 3 root root 4096 Jun 24 12:06 ..
+drwxr-xr-x 2 root root 4096 Jun 24 12:06 docs
+drwxr-xr-x 2 root root 4096 Jun 24 12:06 reports
+drwxr-xr-x 2 root root 4096 Jun 24 12:06 src
+total 12
+drwxr-xr-x 2 root root 4096 Jun 24 12:06 .
+drwx------ 5 root root 4096 Jun 24 12:06 ..
+-rw-r--r-- 1 root root   73 Jun 24 12:06 design_spec.txt
+-e 
+Observation: Before applying restrictions, the default permissions are 'drwxr-xr-x' (755) for directories and '-rw-r--r--' (644) for files. This means any user on the system can read the project files — which is insecure.
+-e 
+=== COMMAND 3: chmod Applied ===
+chmod 700 secure_project/
+chmod 750 secure_project/docs secure_project/src secure_project/reports
+chmod 640 secure_project/docs/design_spec.txt secure_project/src/main.py secure_project/reports/status_report.txt
+-e 
+=== COMMAND 4: Permissions AFTER chmod ===
+total 20
+drwx------ 5 root root 4096 Jun 24 12:06 .
+drwxr-xr-x 3 root root 4096 Jun 24 12:06 ..
+drwxr-x--- 2 root root 4096 Jun 24 12:06 docs
+drwxr-x--- 2 root root 4096 Jun 24 12:06 reports
+drwxr-x--- 2 root root 4096 Jun 24 12:06 src
+total 12
+drwxr-x--- 2 root root 4096 Jun 24 12:06 .
+drwx------ 5 root root 4096 Jun 24 12:06 ..
+-rw-r----- 1 root root   73 Jun 24 12:06 design_spec.txt
+-e 
+Observation: After applying chmod, the root directory is 700 (only owner can read/write/execute), subdirectories are 750 (group can read), and files are 640 (group can read but not write). This enforces least-privilege access.
+-e 
+=== COMMAND 5: Ownership Details (ls -lan) ===
+total 20
+drwx------ 5 0 0 4096 Jun 24 12:06 .
+drwxr-xr-x 3 0 0 4096 Jun 24 12:06 ..
+drwxr-x--- 2 0 0 4096 Jun 24 12:06 docs
+drwxr-x--- 2 0 0 4096 Jun 24 12:06 reports
+drwxr-x--- 2 0 0 4096 Jun 24 12:06 src
+-e 
+Observation: 'ls -lan' shows numeric UID/GID (0/0 = root). All files are owned by root. In a real environment, 'chown' would transfer ownership to the project owner user.
+-e 
+=== COMMAND 6: umask Value ===
+Current umask: 0022
+Symbolic: u=rwx,g=rx,o=rx
+-e 
+Observation: The umask value 0022 means new files get permissions 644 (rw-r--r--) and directories get 755 (rwxr-xr-x) by default. For a more secure environment, umask 0027 or 0077 would be recommended to restrict group and other access.
