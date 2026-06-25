@@ -1,0 +1,137 @@
+===============================================================
+      SECURE PROJECT WORKSPACE SETUP REPORT
+      Question 2 - Graded Lab Assignment (Modules 1-4)
+===============================================================
+Date    : June 24, 2026
+Scenario: Setting up a secure workspace for a project team
+
+---------------------------------------------------------------
+1. DIRECTORY STRUCTURE CREATED
+---------------------------------------------------------------
+Command Used: mkdir -p secure_project/docs secure_project/src secure_project/reports
+
+Structure:
+  secure_project/
+  ├── docs/
+  │   └── design_spec.txt
+  ├── src/
+  │   └── main.py
+  └── reports/
+      └── status_report.txt
+
+Explanation:
+The 'mkdir -p' command creates nested directories in one step.
+Three subdirectories were created to organize project artifacts:
+  - docs/    : For design documents and specifications
+  - src/     : For source code files
+  - reports/ : For status and progress reports
+This separation follows the principle of organized, modular
+project structures, making it easier to apply per-directory
+access controls.
+
+---------------------------------------------------------------
+2. FILE PERMISSIONS BEFORE MODIFICATION
+---------------------------------------------------------------
+secure_project/ : drwxr-xr-x  (755) - World readable
+docs/           : drwxr-xr-x  (755) - World readable
+design_spec.txt : -rw-r--r--  (644) - World readable
+
+Explanation:
+Default Linux permissions (governed by umask 0022) allow any
+user on the system to read the project files and enter the
+directories. This is insecure for confidential project data,
+as no authentication or role restriction is in place.
+
+---------------------------------------------------------------
+3. PERMISSIONS AFTER MODIFICATION (chmod)
+---------------------------------------------------------------
+Commands Applied:
+  chmod 700 secure_project/
+  chmod 750 secure_project/docs
+  chmod 750 secure_project/src
+  chmod 750 secure_project/reports
+  chmod 640 secure_project/docs/design_spec.txt
+  chmod 640 secure_project/src/main.py
+  chmod 640 secure_project/reports/status_report.txt
+
+Result:
+  secure_project/ : drwx------  (700) - Only owner can access
+  docs/           : drwxr-x---  (750) - Group can read/enter
+  src/            : drwxr-x---  (750) - Group can read/enter
+  reports/        : drwxr-x---  (750) - Group can read/enter
+  *.txt / *.py    : -rw-r-----  (640) - Group can read only
+
+Explanation:
+- 700 on the root project dir means ONLY the owner can enter it
+- 750 on subdirs allows the assigned group (e.g., 'devteam') to
+  read files and navigate into the directory, but others cannot
+- 640 on files ensures only the owner can write; group members
+  can read (for collaboration) but cannot modify the files
+- This enforces the principle of least privilege
+
+---------------------------------------------------------------
+4. OWNERSHIP DETAILS
+---------------------------------------------------------------
+Command: ls -lan secure_project/
+Output : All files show UID=0, GID=0 (root:root)
+
+In a production environment, ownership would be set as:
+  chown -R projectlead:devteam secure_project/
+
+This would:
+  - Assign the project lead as file owner (can read/write)
+  - Assign the devteam group (can read per chmod 750/640)
+  - Block all others from accessing any project resources
+
+---------------------------------------------------------------
+5. UMASK VALUE USED
+---------------------------------------------------------------
+Command: umask
+Output : 0022
+Symbolic: u=rwx,g=rx,o=rx
+
+Explanation:
+umask (user file creation mask) determines default permissions
+for newly created files and directories:
+  - Files    : 666 - 022 = 644 (rw-r--r--)
+  - Directories: 777 - 022 = 755 (rwxr-xr-x)
+
+For stricter security, we would set: umask 0027
+This would create files as 640 and directories as 750 by default,
+avoiding the need to chmod every new file individually.
+
+---------------------------------------------------------------
+6. HOW PERMISSIONS PROTECT PROJECT DATA
+---------------------------------------------------------------
+Linux permission model works on three levels:
+  [u] User/Owner  : The creator of the file
+  [g] Group       : A defined team with shared access
+  [o] Others      : Everyone else on the system
+
+Permission bits:
+  [r] Read  (4) : View file contents / list directory
+  [w] Write (2) : Modify file / create files in directory
+  [x] Execute(1): Run file as program / enter directory
+
+With our configuration (700/750/640):
+  a) Unauthorized users (others) have ZERO access
+  b) Group members can READ project files but NOT modify them
+  c) Only the owner can WRITE to files or change permissions
+  d) The combination prevents accidental overwriting, data
+     leaks, and unauthorized modifications to project assets
+
+This is the standard security posture for multi-user projects
+in enterprise Linux environments.
+
+===============================================================
+CONCLUSION
+===============================================================
+A secure workspace was successfully created with:
+  - 3 organized subdirectories (docs, src, reports)
+  - Restricted permissions (700 root, 750 dirs, 640 files)
+  - Ownership confined to root (uid/gid = 0)
+  - Default umask of 0022 documented; 0027 recommended
+
+The workspace now follows the principle of least privilege
+and is protected against unauthorized access.
+===============================================================
