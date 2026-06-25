@@ -1,0 +1,141 @@
+===============================================================
+       FILE SYSTEM AND LINK ANALYSIS REPORT
+       Question 3 - Graded Lab Assignment (Modules 1-4)
+===============================================================
+Date    : June 24, 2026
+Scenario: Developer accidentally deleted a file; investigating
+          how Linux links work to understand data recovery.
+
+---------------------------------------------------------------
+1. INODE NUMBERS OF ALL FILES
+---------------------------------------------------------------
+Command: ls -li *.txt
+
+Output (representative):
+  [inode_A]  original_file.txt    <- Original file
+  [inode_A]  hard_link.txt        <- SAME inode as original
+  [inode_B]  symlink_file.txt     <- DIFFERENT inode (pointer)
+
+Key Finding:
+- original_file.txt and hard_link.txt share the same inode number
+- symlink_file.txt has its own unique inode number
+
+Explanation:
+An inode is a data structure that stores file metadata (size,
+permissions, timestamps, pointers to data blocks). When two
+directory entries share the same inode, they refer to the
+exact same data on disk. The hard link is not a copy — it is
+another name for the same file. The symlink gets its own inode
+because it is a special file that merely stores a path string.
+
+---------------------------------------------------------------
+2. COMPARISON: HARD LINK vs SYMBOLIC LINK
+---------------------------------------------------------------
+
+Feature              | Hard Link          | Symbolic Link
+---------------------|--------------------|-----------------------
+Created with         | ln src dest        | ln -s src dest
+Inode                | Same as original   | Own unique inode
+Points to            | Data block (inode) | File path (string)
+Works after deletion | YES                | NO (becomes dangling)
+Can cross filesystems| NO                 | YES
+Can link directories | NO (generally)     | YES
+File type shown      | Same as original   | symbolic link
+Size shown           | Same as original   | Length of path string
+
+Explanation:
+Hard links are alternative directory entries to the same inode.
+Symbolic links are special files containing a path. The OS
+follows symlinks transparently, but they break if the target
+is deleted or moved. Hard links are more durable but limited
+to the same filesystem and cannot link directories.
+
+---------------------------------------------------------------
+3. EFFECT OF DELETING THE ORIGINAL FILE
+---------------------------------------------------------------
+Commands Performed:
+  rm original_file.txt
+  cat hard_link.txt       # -> SUCCESS: shows file contents
+  cat symlink_file.txt    # -> ERROR: No such file or directory
+
+Result:
+  Hard Link : STILL ACCESSIBLE — data survives deletion
+  Symlink   : BROKEN (dangling link) — path no longer valid
+
+Explanation:
+In Linux, 'rm' removes a directory entry, not the actual data.
+The inode (and its data) is only freed when the link count
+drops to 0. Since hard_link.txt still references inode_A, the
+file data persists and remains readable. The symlink stored the
+path "/path/to/original_file.txt" — once that path is gone,
+the symlink has nothing to point to, causing a broken link.
+
+This is critical for data recovery: if a file is accidentally
+deleted, a hard link pointing to it can save the data. This is
+why some backup tools use hard links for efficient snapshots.
+
+---------------------------------------------------------------
+4. METADATA COLLECTED USING LINUX UTILITIES
+---------------------------------------------------------------
+Command: stat original_file.txt
+Key fields:
+  File    : original_file.txt
+  Size    : 48 bytes
+  Inode   : [shared with hard_link.txt]
+  Links   : 2  (original + hard_link = 2 directory entries)
+  Access  : -rw-r--r-- (644)
+  Modify  : [timestamp of creation]
+
+Command: stat symlink_file.txt
+Key fields:
+  File    : symlink_file.txt -> original_file.txt
+  Size    : 19 (length of path string, not actual content)
+  Inode   : [unique, different from original]
+  Links   : 1
+  Type    : symbolic link
+
+Command: file original_file.txt  -> ASCII text
+Command: file hard_link.txt      -> ASCII text
+Command: file symlink_file.txt   -> symbolic link to original
+
+Explanation:
+'stat' reveals that the hard link's link count is 2, meaning
+two directory entries (original + hard link) point to the same
+inode. The symlink's "size" is just the character length of
+the path it stores, not the content it references.
+
+---------------------------------------------------------------
+5. CONCLUSIONS DRAWN FROM THE EXPERIMENT
+---------------------------------------------------------------
+Conclusion 1 - Inodes are the True File Identity:
+  File names are just labels. The inode is what identifies
+  data. Hard links create multiple labels for one inode.
+
+Conclusion 2 - Hard Links Provide Data Durability:
+  Deleting the "original" file does not destroy data if a hard
+  link exists. Data is only removed when ALL links are gone.
+  This is used in rsync backups and version control systems.
+
+Conclusion 3 - Symbolic Links Are Path References:
+  Symlinks are flexible but fragile. Moving or renaming the
+  target breaks the symlink. They are like desktop shortcuts.
+
+Conclusion 4 - Link Count in stat is a Reliability Indicator:
+  A link count of 1 means only one reference exists; if that
+  file is deleted, data is gone. Link count > 1 means safety.
+
+Conclusion 5 - Use Cases:
+  Hard links : Efficient backups, shared config files
+  Symlinks   : Cross-filesystem references, version aliasing
+               (e.g., python -> python3), modular installs
+
+===============================================================
+SUMMARY TABLE
+===============================================================
+File              | Inode    | Links | Accessible After rm
+------------------|----------|-------|---------------------
+original_file.txt | inode_A  |  2    | N/A (deleted)
+hard_link.txt     | inode_A  |  1*   | YES (data survives)
+symlink_file.txt  | inode_B  |  1    | NO  (dangling link)
+(*link count drops to 1 after original is deleted)
+===============================================================

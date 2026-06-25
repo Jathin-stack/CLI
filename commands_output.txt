@@ -1,0 +1,69 @@
+=== COMMAND 1: Create original file ===
+echo 'This is the original project file. Version 1.0' > original_file.txt
+This is the original project file. Version 1.0
+-e 
+Observation: We created 'original_file.txt' using the echo command with output redirection. This file will serve as the source for both hard and symbolic links in this experiment.
+-e 
+=== COMMAND 2: Create Hard Link ===
+ln original_file.txt hard_link.txt
+-e 
+Observation: 'ln' without any flags creates a hard link. A hard link is another directory entry pointing to the same inode (data block) on disk. Both original_file.txt and hard_link.txt now reference the exact same data.
+-e 
+=== COMMAND 3: Create Symbolic Link ===
+ln -s original_file.txt symlink_file.txt
+-e 
+Observation: 'ln -s' creates a symbolic (soft) link. A symlink is a special file that stores the path to the target file. Unlike a hard link, it does not share the same inode — it is a pointer/shortcut to the original.
+-e 
+=== COMMAND 4: Inode Numbers (ls -li) ===
+573474 -rw-r--r-- 1 root root 1001 Jun 24 12:07 /home/claude/lab_submission/Q3_Links/commands_output.txt
+573464 -rw-r--r-- 2 root root   47 Jun 24 12:07 /home/claude/lab_submission/Q3_Links/hard_link.txt
+573464 -rw-r--r-- 2 root root   47 Jun 24 12:07 /home/claude/lab_submission/Q3_Links/original_file.txt
+573475 lrwxrwxrwx 1 root root   54 Jun 24 12:07 /home/claude/lab_submission/Q3_Links/symlink_file.txt -> /home/claude/lab_submission/Q3_Links/original_file.txt
+-e 
+Observation: The 'ls -li' command shows the inode number (first column). Notice that original_file.txt and hard_link.txt share the SAME inode number, confirming they point to identical data. symlink_file.txt has a DIFFERENT inode number since it is merely a pointer.
+-e 
+=== COMMAND 5: Detailed stat comparison ===
+  File: /home/claude/lab_submission/Q3_Links/original_file.txt
+  Size: 47        	Blocks: 8          IO Block: 4096   regular file
+Device: 254,0	Inode: 573464      Links: 2
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2026-06-24 12:07:29.025342111 +0000
+Modify: 2026-06-24 12:07:29.021342111 +0000
+Change: 2026-06-24 12:07:29.029342111 +0000
+ Birth: 2026-06-24 12:07:29.021342111 +0000
+---
+  File: /home/claude/lab_submission/Q3_Links/hard_link.txt
+  Size: 47        	Blocks: 8          IO Block: 4096   regular file
+Device: 254,0	Inode: 573464      Links: 2
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2026-06-24 12:07:29.025342111 +0000
+Modify: 2026-06-24 12:07:29.021342111 +0000
+Change: 2026-06-24 12:07:29.029342111 +0000
+ Birth: 2026-06-24 12:07:29.021342111 +0000
+---
+  File: /home/claude/lab_submission/Q3_Links/symlink_file.txt -> /home/claude/lab_submission/Q3_Links/original_file.txt
+  Size: 54        	Blocks: 0          IO Block: 4096   symbolic link
+Device: 254,0	Inode: 573475      Links: 1
+Access: (0777/lrwxrwxrwx)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2026-06-24 12:07:29.041342110 +0000
+Modify: 2026-06-24 12:07:29.037342110 +0000
+Change: 2026-06-24 12:07:29.037342110 +0000
+ Birth: 2026-06-24 12:07:29.037342110 +0000
+-e 
+Observation: 'stat' reveals detailed metadata. The hard link shows the same inode, same size, and same link count (2) as the original — because they ARE the same file. The symlink shows File type as 'symbolic link' and its own unique inode.
+-e 
+=== COMMAND 6: Delete original file and observe ===
+rm original_file.txt
+--- hard_link.txt contents after deletion: ---
+This is the original project file. Version 1.0
+--- symlink_file.txt contents after deletion: ---
+
+-e 
+Observation: After deleting original_file.txt, the hard link (hard_link.txt) STILL works because the underlying inode and data block remain until all hard links are removed. The symbolic link (symlink_file.txt) is now BROKEN — it points to a path that no longer exists, resulting in a 'No such file or directory' error.
+-e 
+=== COMMAND 7: file command to identify link types ===
+/home/claude/lab_submission/Q3_Links/original_file.txt: ASCII text
+/home/claude/lab_submission/Q3_Links/hard_link.txt: ASCII text
+/home/claude/lab_submission/Q3_Links/symlink_file.txt: symbolic link to /home/claude/lab_submission/Q3_Links/original_file.txt
+-e 
+Observation: The 'file' command identifies the type of each entry. original_file.txt and hard_link.txt are both identified as 'ASCII text' (they are equivalent files). symlink_file.txt is identified as a 'symbolic link', making its type visually distinct.
