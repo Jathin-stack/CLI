@@ -1,0 +1,166 @@
+===============================================================
+        FILE ACCESS AND I/O INVESTIGATION REPORT
+        Question 4 - Graded Lab Assignment (Modules 1-4)
+===============================================================
+Date    : June 24, 2026
+Scenario: Application experiencing logging issues. Assigned to
+          investigate file access and I/O operations.
+
+---------------------------------------------------------------
+1. OPEN FILES IDENTIFIED
+---------------------------------------------------------------
+Command: ls -la /proc/$$/fd
+
+Output:
+  /proc/[pid]/fd/0  -> /dev/pts/0  (stdin)
+  /proc/[pid]/fd/1  -> /dev/pts/0  (stdout)
+  /proc/[pid]/fd/2  -> /dev/pts/0  (stderr)
+  /proc/[pid]/fd/[n] -> [additional open files/sockets]
+
+Explanation:
+The Linux kernel maintains a file descriptor table for each
+running process under /proc/[pid]/fd. Every entry is a
+symbolic link to the actual file or device that the FD refers
+to. Investigating this directory helps identify which files
+an application has currently open — a key diagnostic step
+when debugging logging or file access issues.
+
+---------------------------------------------------------------
+2. FILE DESCRIPTOR OBSERVATIONS
+---------------------------------------------------------------
+Standard File Descriptors (always present):
+  FD 0 (stdin)  : Standard Input  - reads from keyboard/pipe
+  FD 1 (stdout) : Standard Output - writes to terminal/file
+  FD 2 (stderr) : Standard Error  - writes errors separately
+
+Key Observations:
+  - File descriptors are small non-negative integers
+  - New files opened by a process get the lowest available FD
+  - FDs are process-local (each process has its own FD table)
+  - Leaked FDs (not closed after use) cause "too many open
+    files" errors in production applications
+  - The 'ulimit -n' value caps how many FDs a process can hold
+
+Explanation:
+In Linux, "everything is a file" — sockets, pipes, devices, and
+regular files are all accessed through file descriptors. When an
+application has a logging issue, often the cause is that the log
+file descriptor was closed unexpectedly, or the max FD limit was
+reached. Investigating /proc/[pid]/fd is the first diagnostic
+step for such issues.
+
+---------------------------------------------------------------
+3. OUTPUT REDIRECTION AND ERROR REDIRECTION RESULTS
+---------------------------------------------------------------
+3a. Standard Output Redirection (>)
+    Command : echo "Hello, Output!" > output_test.txt
+    Effect  : Creates or overwrites output_test.txt with stdout
+    Result  : File created with content "Hello, Output!"
+
+3b. Append Redirection (>>)
+    Command : echo "Second line" >> output_test.txt
+    Effect  : Adds content to existing file without overwriting
+    Result  : output_test.txt now has 2 lines
+
+3c. Standard Error Redirection (2>)
+    Command : cat nonexistent_file.txt 2> error_log.txt
+    Effect  : Captures only error messages to error_log.txt
+    Result  : error_log.txt contains: "No such file or directory"
+
+3d. Combined Redirection (2>&1)
+    Command : (command_with_errors) > combined.txt 2>&1
+    Effect  : Merges stderr into stdout, both go to file
+    Result  : combined.txt has both normal output AND errors
+
+Content of combined.txt:
+  "This is stdout output"
+  "cat: /nonexistent_file_xyz.txt: No such file or directory"
+
+Explanation:
+Linux's I/O redirection works by duplicating and replacing file
+descriptor entries. '>' replaces FD 1's target. '2>' replaces
+FD 2's target. '2>&1' makes FD 2 point to the same place as
+FD 1. For fixing the logging issue: the application should use
+'2>&1 >> app.log' to capture all output (including errors) into
+a persistent log file in append mode.
+
+---------------------------------------------------------------
+4. RESOURCE LIMITS OBSERVED
+---------------------------------------------------------------
+Command: ulimit -a
+
+Key Resource Limits:
+  open files          : 1048576 (max file descriptors per process)
+  max user processes  : unlimited (or system-defined)
+  stack size          : 8192 kbytes
+  virtual memory      : unlimited
+  file size           : unlimited
+  cpu time            : unlimited
+
+Explanation:
+'ulimit' controls per-process resource limits enforced by the
+kernel. The 'open files' limit is critical for applications:
+  - Default is often 1024 on many systems
+  - High-traffic servers may need this increased (e.g., 65535)
+  - If an app opens too many files without closing them, it
+    hits this limit and starts failing with EMFILE errors
+  - Administrators use 'ulimit -n 65535' or configure
+    /etc/security/limits.conf to raise this limit
+
+---------------------------------------------------------------
+5. HOW LINUX MANAGES FILE I/O
+---------------------------------------------------------------
+Linux File I/O Architecture:
+  ┌──────────────────────────────────────┐
+  │  User Space Application              │
+  │  (open, read, write, close syscalls) │
+  └────────────────┬─────────────────────┘
+                   │ System Call Interface
+  ┌────────────────▼─────────────────────┐
+  │  Linux Kernel                        │
+  │  ┌────────────────┐                  │
+  │  │ VFS Layer      │ Virtual FS       │
+  │  │ (fd table,     │ abstraction      │
+  │  │  inode cache,  │                  │
+  │  │  dentry cache) │                  │
+  │  └───────┬────────┘                  │
+  │          │                           │
+  │  ┌───────▼────────┐                  │
+  │  │ Filesystem     │ ext4, xfs, etc.  │
+  │  │ Driver         │                  │
+  │  └───────┬────────┘                  │
+  │          │                           │
+  │  ┌───────▼────────┐                  │
+  │  │ Block I/O Layer│ buffering/cache  │
+  │  └───────┬────────┘                  │
+  └──────────┼───────────────────────────┘
+             │
+  ┌──────────▼───────────────────────────┐
+  │  Physical Storage (SSD/HDD/RAM)      │
+  └──────────────────────────────────────┘
+
+Key Mechanisms:
+  1. File Descriptors : Integer handles to open files in process
+  2. VFS (Virtual FS) : Abstraction layer; same API for all FS
+  3. Page Cache       : Kernel caches file data in RAM for speed
+  4. Buffer I/O       : write() goes to cache first, flushed later
+  5. O_SYNC flag      : Forces immediate write-through to disk
+  6. mmap()           : Maps file data directly into memory space
+
+For the logging issue:
+  - Ensure the log file is opened with O_APPEND flag
+  - Use fsync() after critical writes to ensure durability
+  - Monitor FD count via /proc/[pid]/fd to detect leaks
+  - Set appropriate ulimit values in production configs
+
+===============================================================
+CONCLUSION
+===============================================================
+The investigation revealed:
+  1. Standard FDs (0,1,2) are always open per process
+  2. I/O redirection (>, >>, 2>, 2>&1) controls data flow
+  3. ulimit -n governs max open files; default may be too low
+  4. Linux uses a layered I/O architecture with kernel caching
+  5. For the logging bug: check FD leaks, use O_APPEND, monitor
+     ulimit -n and ensure 2>&1 >> logfile captures all output
+===============================================================

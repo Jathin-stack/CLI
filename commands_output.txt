@@ -1,0 +1,70 @@
+=== COMMAND 1: lsof (open files via /proc) ===
+Command: ls /proc/639/fd -la
+total 0
+dr-x------ 2 root root  5 Jun 24 12:08 .
+dr-xr-xr-x 9 root root  0 Jun 24 12:08 ..
+lr-x------ 1 root root 64 Jun 24 12:08 0 -> pipe:[1060]
+l-wx------ 1 root root 64 Jun 24 12:08 1 -> /home/claude/lab_submission/Q4_IO/commands_output.txt
+l-wx------ 1 root root 64 Jun 24 12:08 10 -> pipe:[1061]
+l-wx------ 1 root root 64 Jun 24 12:08 11 -> pipe:[1062]
+l-wx------ 1 root root 64 Jun 24 12:08 2 -> /home/claude/lab_submission/Q4_IO/commands_output.txt
+-e 
+Observation: /proc/$$/fd is a special filesystem directory listing all file descriptors open by the current process (639). File descriptors 0, 1, and 2 represent stdin, stdout, and stderr respectively — these are always open. Additional FDs may reference pipes, sockets, or other files.
+-e 
+=== COMMAND 2: File Descriptor Overview ===
+Standard File Descriptors:
+FD 0 -> stdin  (standard input)
+FD 1 -> stdout (standard output)
+FD 2 -> stderr (standard error)
+0
+1
+10
+11
+2
+-e 
+Observation: Every Linux process inherits 3 standard file descriptors from the OS. When a process opens a file, it gets the next available FD number (starting from 3). This FD table is visible in /proc/[pid]/fd and is the kernel's way of tracking all open resources per process.
+stdout_output.txt created successfully
+-e 
+=== COMMAND 3: Output Redirection (>) ===
+Command: echo 'Hello, Output!' > output_test.txt
+Hello, Output! This was written via output redirection.
+-e 
+Observation: The '>' operator redirects stdout (FD 1) from the terminal to a file. The file is created if it doesn't exist, or truncated if it does. This is one of the most used I/O features in Linux shell scripting.
+-e 
+=== COMMAND 4: Append Redirection (>>) ===
+Command: echo 'Second line' >> output_test.txt
+Hello, Output! This was written via output redirection.
+Second line - appended using >>
+-e 
+Observation: The '>>' operator appends to a file without truncating existing content. This is useful for log files and cumulative reports where historical data must be preserved.
+-e 
+=== COMMAND 5: Error Redirection (2>) ===
+Command: cat nonexistent_file.txt 2> error_log.txt
+Error captured in error_log.txt:
+cat: /nonexistent_file_xyz.txt: No such file or directory
+-e 
+Observation: The '2>' operator redirects stderr (FD 2) to a file. Here, attempting to read a non-existent file produces an error message. Redirecting stderr separately from stdout is essential for clean log files in automated scripts.
+-e 
+=== COMMAND 6: Combined Stdout + Stderr Redirection (2>&1) ===
+Command: (echo 'output line'; cat nonexistent) > combined.txt 2>&1
+This is stdout output
+cat: /nonexistent_file_xyz.txt: No such file or directory
+-e 
+Observation: '2>&1' merges stderr into stdout. The '>' then sends the combined stream to a file. This is commonly used in cron jobs and production scripts to capture ALL output (both normal and error) in one log file.
+-e 
+=== COMMAND 7: Resource Limits (ulimit) ===
+Command: ulimit -a
+time(seconds)        unlimited
+file(blocks)         unlimited
+data(kbytes)         unlimited
+stack(kbytes)        8192
+coredump(blocks)     0
+memory(kbytes)       unlimited
+locked memory(kbytes) 8192
+process              15955
+nofiles              1024
+vmemory(kbytes)      unlimited
+locks                unlimited
+rtprio               0
+-e 
+Observation: 'ulimit -a' shows all resource limits for the current shell session. Key limits include: open files (max file descriptors a process can open), stack size, and max processes. These limits prevent any single process from monopolizing system resources — crucial for multi-user server environments.

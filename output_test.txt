@@ -1,0 +1,2 @@
+Hello, Output! This was written via output redirection.
+Second line - appended using >>
