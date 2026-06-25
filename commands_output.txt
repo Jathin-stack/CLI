@@ -1,0 +1,101 @@
+=== COMMAND 1: lsblk - Available Storage Devices ===
+NAME MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+vda  254:0    0  256G  0 disk /
+vdb  254:16   0  9.7M  1 disk /opt/rclone
+vdc  254:32   0  664K  1 disk /mnt/skills/public
+vdd  254:48   0  5.4M  1 disk /mnt/skills/examples
+-e 
+Observation: 'lsblk' lists all block devices (storage devices) and their partitions in a tree format. It shows device names, sizes, types (disk/partition), and mount points. This gives a quick overview of all available storage hardware on the system.
+-e 
+=== COMMAND 2: df -h - Mounted File Systems ===
+Filesystem                                                                         Size  Used Avail Use% Mounted on
+tmpfs                                                                              2.0G     0  2.0G   0% /dev/shm
+tmpfs                                                                              2.0G     0  2.0G   0% /sys/fs/cgroup
+/dev/vda                                                                           252G  8.6G   10G  47% /
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/tool_results  1.0P     0  1.0P   0% /mnt/user-data/tool_results
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/outputs       1.0P     0  1.0P   0% /mnt/user-data/outputs
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/uploads       1.0P     0  1.0P   0% /mnt/user-data/uploads
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/transcripts             1.0P     0  1.0P   0% /mnt/transcripts
+-e 
+Observation: 'df -h' (disk free, human-readable) shows all currently mounted filesystems along with total size, used space, available space, usage percentage, and mount point. This is the primary command for checking if storage is running low.
+-e 
+=== COMMAND 3: df -hT - Filesystem Types ===
+Filesystem                                                                        Type         Size  Used Avail Use% Mounted on
+tmpfs                                                                             tmpfs        2.0G     0  2.0G   0% /dev/shm
+tmpfs                                                                             tmpfs        2.0G     0  2.0G   0% /sys/fs/cgroup
+/dev/vda                                                                          ext4         252G  8.6G   10G  47% /
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/tool_results fuse.rclone  1.0P     0  1.0P   0% /mnt/user-data/tool_results
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/outputs      fuse.rclone  1.0P     0  1.0P   0% /mnt/user-data/outputs
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/uploads      fuse.rclone  1.0P     0  1.0P   0% /mnt/user-data/uploads
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/transcripts            fuse.rclone  1.0P     0  1.0P   0% /mnt/transcripts
+-e 
+Observation: 'df -hT' includes the filesystem type column (e.g., ext4, tmpfs, overlay). Knowing the filesystem type helps identify the storage backend — tmpfs is RAM-based and temporary, while ext4/xfs are persistent disk filesystems.
+-e 
+=== COMMAND 4: du -sh /* - Disk Usage by Directory ===
+2.9G	/home
+201M	/var
+25M	/tmp
+4.7G	/usr
+7.3M	/etc
+-e 
+Observation: 'du -sh' (disk usage, summary, human-readable) shows how much disk space each directory consumes. This is essential for identifying which directories are consuming the most space — useful when a disk is filling up unexpectedly.
+-e 
+=== COMMAND 5: df -i - Inode Utilization ===
+Filesystem                                                                            Inodes  IUsed      IFree IUse% Mounted on
+tmpfs                                                                                 511741     20     511721    1% /dev/shm
+tmpfs                                                                                 511741      9     511732    1% /sys/fs/cgroup
+/dev/vda                                                                            16777216 194007   16583209    2% /
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/tool_results 1000000000      0 1000000000    0% /mnt/user-data/tool_results
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/outputs      1000000000      0 1000000000    0% /mnt/user-data/outputs
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/uploads      1000000000      0 1000000000    0% /mnt/user-data/uploads
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/transcripts            1000000000      0 1000000000    0% /mnt/transcripts
+-e 
+Observation: 'df -i' shows inode usage instead of block usage. Each file requires one inode. A filesystem can run out of inodes before running out of disk space (100% inode use = cannot create new files even with space available). Monitoring inodes is critical for mail servers and systems with many small files.
+-e 
+=== COMMAND 6: cat /proc/mounts - Mount Details ===
+proc /proc proc rw,relatime 0 0
+sysfs /sys sysfs rw,relatime 0 0
+devtmpfs /dev devtmpfs rw,relatime,size=2042076k,nr_inodes=510519,mode=755 0 0
+tmpfs /dev/shm tmpfs rw,relatime 0 0
+devpts /dev/pts devpts rw,relatime,mode=600,ptmxmode=000 0 0
+tmpfs /sys/fs/cgroup tmpfs rw,relatime 0 0
+cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpu 0 0
+cgroup /sys/fs/cgroup/cpuacct cgroup rw,relatime,cpuacct 0 0
+cgroup /sys/fs/cgroup/memory cgroup rw,relatime,memory 0 0
+cgroup /sys/fs/cgroup/devices cgroup rw,relatime,devices 0 0
+cgroup /sys/fs/cgroup/freezer cgroup rw,relatime,freezer 0 0
+cgroup /sys/fs/cgroup/blkio cgroup rw,relatime,blkio 0 0
+cgroup /sys/fs/cgroup/pids cgroup rw,relatime,pids 0 0
+cgroup2 /sys/fs/cgroup/unified cgroup2 rw,relatime 0 0
+/dev/vda / ext4 rw,relatime,resuid=65534,resgid=65534 0 0
+/dev/vdb /opt/rclone squashfs ro,relatime,errors=continue 0 0
+/dev/vdc /mnt/skills/public squashfs ro,relatime,errors=continue 0 0
+/dev/vdd /mnt/skills/examples squashfs ro,relatime,errors=continue 0 0
+devpts /dev/pts devpts rw,relatime,mode=600,ptmxmode=000 0 0
+tmpfs /dev/shm tmpfs rw,relatime 0 0
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/tool_results /mnt/user-data/tool_results fuse.rclone ro,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other,max_read=1048576 0 0
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/outputs /mnt/user-data/outputs fuse.rclone rw,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other,max_read=1048576 0 0
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/user-data/uploads /mnt/user-data/uploads fuse.rclone ro,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other,max_read=1048576 0 0
+rclone-filestore:claude_chat_016aFBPT2BRAjZRy4Ejn8W9w:/mnt/transcripts /mnt/transcripts fuse.rclone ro,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other,max_read=1048576 0 0
+-e 
+Observation: '/proc/mounts' is a kernel-maintained file listing all currently mounted filesystems with mount options. It provides more detail than 'mount' command output and is useful for verifying that filesystems are mounted with the correct options (e.g., rw, noexec, nosuid).
+-e 
+=== COMMAND 7: ls -la /dev/sd* /dev/vd* /dev/nvme* - Device Nodes ===
+brw------- 1 root root 254,  0 Jun 14 06:33 /dev/vda
+brw------- 1 root root 254, 16 Jun 14 06:33 /dev/vdb
+brw------- 1 root root 254, 32 Jun 14 06:33 /dev/vdc
+brw------- 1 root root 254, 48 Jun 14 06:33 /dev/vdd
+brw-------  1 root   root     7,   0 Jun 14 06:33 loop0
+brw-------  1 root   root     7,   1 Jun 14 06:33 loop1
+brw-------  1 root   root     7,   2 Jun 14 06:33 loop2
+brw-------  1 root   root     7,   3 Jun 14 06:33 loop3
+brw-------  1 root   root     7,   4 Jun 14 06:33 loop4
+brw-------  1 root   root     7,   5 Jun 14 06:33 loop5
+brw-------  1 root   root     7,   6 Jun 14 06:33 loop6
+brw-------  1 root   root     7,   7 Jun 14 06:33 loop7
+brw-------  1 root   root   254,   0 Jun 14 06:33 vda
+brw-------  1 root   root   254,  16 Jun 14 06:33 vdb
+brw-------  1 root   root   254,  32 Jun 14 06:33 vdc
+brw-------  1 root   root   254,  48 Jun 14 06:33 vdd
+-e 
+Observation: Block device files in /dev represent physical or virtual storage. Device names follow conventions: /dev/sda (SATA), /dev/vda (virtual), /dev/nvme0n1 (NVMe SSD). Partitions are numbered (sda1, sda2). Knowing device names is necessary for mounting, formatting, or partitioning operations.

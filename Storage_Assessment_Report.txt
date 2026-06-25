@@ -1,0 +1,225 @@
+===============================================================
+      STORAGE HEALTH ASSESSMENT AND DOCUMENTATION REPORT
+      Question 5 - Graded Lab Assignment (Modules 1-4)
+===============================================================
+Date    : June 24, 2026
+Scenario: Organization deploying a new application server.
+          Assessing storage resources and documenting findings.
+Editor  : Report prepared and saved using vi editor workflow.
+
+---------------------------------------------------------------
+1. AVAILABLE STORAGE DEVICES
+---------------------------------------------------------------
+Command: lsblk
+
+Output:
+  NAME  MAJ:MIN  RM   SIZE  RO  TYPE  MOUNTPOINTS
+  vda   254:0     0   256G   0  disk  /
+  vdb   254:16    0   9.7M   1  disk  /opt/rclone
+  vdc   254:32    0   664K   1  disk  /mnt/skills/public
+  vdd   254:48    0   5.4M   1  disk  /mnt/skills/examples
+
+Devices Identified:
+  /dev/vda  : Primary virtual disk, 256 GB, read-write
+               Mounted at '/' (root filesystem)
+  /dev/vdb  : Secondary virtual disk, 9.7 MB, read-only
+               Mounted at /opt/rclone (tool storage)
+  /dev/vdc  : Tertiary virtual disk, 664 KB, read-only
+               Mounted at /mnt/skills/public
+  /dev/vdd  : Quaternary virtual disk, 5.4 MB, read-only
+               Mounted at /mnt/skills/examples
+
+Explanation:
+'lsblk' reads from /sys/block and displays block devices in
+a tree format. The 'v' prefix in device names (vda, vdb)
+indicates virtual disks — typical in cloud/VM environments.
+RM=0 means non-removable; RO=1 means read-only. This server
+uses virtual block devices, consistent with cloud deployment.
+
+---------------------------------------------------------------
+2. MOUNTED FILE SYSTEMS
+---------------------------------------------------------------
+Command: df -h
+
+Output:
+  Filesystem       Size   Used  Avail  Use%  Mounted on
+  tmpfs            2.0G      0   2.0G    0%  /dev/shm
+  tmpfs            2.0G      0   2.0G    0%  /sys/fs/cgroup
+  /dev/vda         252G   8.6G    10G   47%  /
+  rclone-filestore 1.0P      0   1.0P    0%  /mnt/user-data/*
+  (remote mounts for uploads, outputs, transcripts)
+
+Key Observations:
+  - Primary disk (/dev/vda): 252 GB total, 8.6 GB used (47%)
+  - Available space on primary: ~10 GB
+  - tmpfs (RAM-based): 2 GB each for shm and cgroup
+  - Remote storage: rclone-based fuse mounts (petabyte scale)
+
+Command: df -hT  (with filesystem type)
+
+Output:
+  /dev/vda       ext4         252G  8.6G   10G  47%  /
+  tmpfs          tmpfs        2.0G     0  2.0G   0%  /dev/shm
+  rclone-...     fuse.rclone  1.0P     0  1.0P   0%  /mnt/...
+
+Explanation:
+The primary filesystem is ext4 — the most stable and widely
+used Linux filesystem. tmpfs filesystems are RAM-based and
+used for temporary/shared memory (contents lost on reboot).
+rclone fuse mounts provide access to remote cloud storage,
+appearing as local filesystems to applications.
+
+---------------------------------------------------------------
+3. DISK USAGE STATISTICS
+---------------------------------------------------------------
+Command: du -sh /home /var /tmp /usr /etc
+
+Output:
+  2.9G    /home    (user data and lab files)
+  201M    /var     (logs, databases, spool files)
+  25M     /tmp     (temporary files)
+  4.7G    /usr     (installed programs and libraries)
+  7.3M    /etc     (system configuration files)
+
+Total Accounted: ~7.9 GB (matches df's 8.6G used, overhead included)
+
+Top Consumer: /usr at 4.7 GB — installed software
+Second:       /home at 2.9 GB — includes our lab submission
+
+Explanation:
+'du -sh' summarizes disk usage per directory. The -s flag
+gives a single total per directory (not per file), and -h
+formats in human-readable units. /usr being the largest is
+expected as it holds all installed binaries, libraries, and
+documentation. /var growing over time is normal (logs) but
+should be monitored — runaway log files can fill a disk.
+
+---------------------------------------------------------------
+4. INODE UTILIZATION
+---------------------------------------------------------------
+Command: df -i
+
+Output:
+  Filesystem    Inodes    IUsed     IFree    IUse%  Mount
+  /dev/vda    16777216   194007  16583209      2%   /
+  tmpfs         511741       20    511721      0%   /dev/shm
+  tmpfs         511741        9    511732      0%   /sys/fs/cgroup
+  rclone-...  1000000000      0  1000000000   0%   /mnt/...
+
+Key Findings:
+  - Total inodes on /dev/vda: 16,777,216
+  - Inodes used: 194,007 (2%)
+  - Inodes free: 16,583,209 (98%)
+
+Inode Health: EXCELLENT (only 2% used)
+
+Explanation:
+Each file and directory requires exactly one inode. Inodes store
+metadata (permissions, ownership, timestamps, data block pointers)
+but NOT the filename. A system can run out of inodes while still
+having free disk space — this would prevent new file creation.
+With only 2% inode usage on this server, inode exhaustion is
+not a concern in the near term. However, applications that
+create many small files (mail servers, cache servers) need
+regular inode monitoring.
+
+---------------------------------------------------------------
+5. STORAGE HEALTH OBSERVATIONS
+---------------------------------------------------------------
+Health Check Summary:
+
+  Metric                  | Value        | Status
+  ------------------------|--------------|------------------
+  Primary Disk Size       | 252 GB       | Adequate
+  Disk Used               | 8.6 GB (47%) | WARNING - Monitor
+  Disk Available          | ~10 GB       | LOW - Action needed
+  Filesystem Type         | ext4         | Healthy
+  Inode Usage             | 2% (194K)    | Excellent
+  RAM-based (tmpfs)       | 2 GB each    | Healthy
+  Remote Storage          | 1 PB         | Adequate
+  Virtual Disk Count      | 4 devices    | Normal
+
+Detailed Observations:
+  OBS-1: Disk at 47% usage is within acceptable range but the
+         10 GB free on a 252 GB disk is concerning. With heavy
+         workloads, this could fill within days/weeks.
+
+  OBS-2: /usr consuming 4.7 GB indicates a software-heavy
+         environment. Removing unused packages would reclaim
+         significant space.
+
+  OBS-3: /home at 2.9 GB is reasonable but will grow as the
+         user adds more project files.
+
+  OBS-4: /var at 201 MB is healthy now but log rotation
+         policies must be configured to prevent log bloat.
+
+  OBS-5: Inode utilization is excellent at 2%. No near-term
+         risk of inode exhaustion.
+
+  OBS-6: ext4 filesystem is well-supported, journaled, and
+         suitable for an application server workload.
+
+---------------------------------------------------------------
+6. RECOMMENDATIONS FOR IMPROVING STORAGE UTILIZATION
+---------------------------------------------------------------
+REC-1: CLEAN UP UNUSED PACKAGES
+  Command: apt autoremove && apt clean
+  Expected Savings: 200MB - 1GB
+  Priority: HIGH
+
+REC-2: CONFIGURE LOG ROTATION
+  File   : /etc/logrotate.conf
+  Action : Set maxsize 100M, rotate weekly, compress old logs
+  Command: logrotate -d /etc/logrotate.conf (dry run test)
+  Priority: HIGH — prevents /var from filling unexpectedly
+
+REC-3: EXPAND PRIMARY DISK
+  Current: 252 GB with only ~10 GB free (47% used)
+  Recommended: Expand to 512 GB or add secondary data disk
+  Action : Cloud console → resize volume → resize2fs /dev/vda
+  Priority: HIGH — 10 GB is dangerously low for an app server
+
+REC-4: IMPLEMENT DISK MONITORING
+  Tool   : Add cron job with disk alert threshold
+  Command: df -h | awk '$5 > 80 {print "ALERT: "$0}'
+  Alert  : Send email if usage exceeds 80%
+  Priority: MEDIUM
+
+REC-5: SEPARATE /var TO ITS OWN PARTITION
+  Reason : Prevents log growth from filling / partition
+  Action : Allocate a dedicated /var partition (20-50 GB)
+  Priority: MEDIUM (for production deployment)
+
+REC-6: ENABLE COMPRESSION (if workload permits)
+  Tool   : Consider btrfs or zfs with transparent compression
+  Savings: 20-40% space reduction for text/log-heavy workloads
+  Note   : Requires filesystem migration
+  Priority: LOW (plan for next server provision)
+
+REC-7: INODE MONITORING
+  Command: df -i | awk '$5+0 > 80 {print "INODE ALERT: "$0}'
+  Add to : Daily cron monitoring script
+  Priority: LOW (current usage is 2%)
+
+===============================================================
+STORAGE ASSESSMENT CONCLUSION
+===============================================================
+The application server storage is functional and currently
+operational, but requires immediate attention on disk space:
+
+  CRITICAL : Only ~10 GB free on primary disk (252 GB total)
+  URGENT   : Implement log rotation before deployment
+  GOOD     : Inode utilization healthy at 2%
+  GOOD     : ext4 filesystem is stable and reliable
+  GOOD     : Remote cloud storage (rclone) adds flexibility
+
+Recommended actions before production deployment:
+  1. Expand /dev/vda to at least 512 GB
+  2. Configure logrotate for /var/log
+  3. Run apt autoremove to free unused package space
+  4. Set up automated disk usage alerts at 80% threshold
+
+This report was created using vi editor and Linux storage
+diagnostic commands (lsblk, df, du, /proc/mounts).
+===============================================================
