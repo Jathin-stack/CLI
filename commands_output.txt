@@ -1,0 +1,39 @@
+=== COMMAND 1: whoami ===
+root
+
+Observation: The 'whoami' command displays the current logged-in username. The output shows 'root', meaning I am operating with superuser (administrator) privileges on this Linux system.
+
+=== COMMAND 2: id ===
+uid=0(root) gid=0(root) groups=0(root)
+
+Observation: The 'id' command shows the user ID (uid=0), group ID (gid=0), and all groups the user belongs to. uid=0 and gid=0 confirm root-level access, which grants full system control.
+
+=== COMMAND 3: echo $SHELL ===
+/bin/bash
+
+Observation: The $SHELL environment variable holds the path to the current user's default shell. The output '/bin/bash' shows we are using the Bash shell, which is the most widely used Linux shell.
+
+=== COMMAND 4: pwd ===
+/
+
+Observation: The 'pwd' (print working directory) command shows the absolute path of the current directory. The root directory '/' is the top of the Linux file system hierarchy.
+
+=== COMMAND 5: ls -la /home/claude (Workspace listing) ===
+total 40
+drwxr-xr-x 8 root root 4096 Jun 24 12:04 .
+drwxr-xr-x 4 root root 4096 Apr 18 18:07 ..
+drwxr-xr-x 5 root root 4096 Apr 18 18:12 .cache
+drwxr-xr-x 3 root root 4096 Apr 18 18:10 .config
+drwxr-xr-x 3 root root 4096 Apr 18 18:10 .local
+drwxr-xr-x 3 root root 4096 Apr 18 18:12 .npm
+drwxr-xr-x 5 root root 4096 Apr 18 18:12 .npm-global
+-rw-r--r-- 1 root root   74 Apr 18 18:10 .npmrc
+-rw-r--r-- 1 root root  215 Apr 18 18:10 .wget-hsts
+drwxr-xr-x 7 root root 4096 Jun 24 12:05 lab_submission
+
+Observation: The 'ls -la' command lists all files and directories including hidden ones (prefixed with '.'), along with permissions, ownership, size, and modification date. The workspace contains config directories and the lab_submission folder.
+
+=== COMMAND 6: Network Connectivity Test (curl) ===
+HTTP Status: 403 - Network is CONNECTED
+
+Observation: The 'curl' command was used to test network connectivity by sending an HTTP request to google.com. A valid HTTP response confirms the system has active internet access.
